@@ -42,6 +42,11 @@ cmake -G "MinGW Makefiles" ../../../..
 make
 ```
 
+```powershells
+cmake . -DTOOLCHAIN=<absolute toolchain path> -DPROJ=gpio_led -B build -G "MinGW Makefiles"
+cmake --build build
+```
+
 You will get 2 key files, `hello_world` and `hello_world.bin`.
 
 1. If you are using JLink to run or debug your program, use `hello_world`
