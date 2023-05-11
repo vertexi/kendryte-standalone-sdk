@@ -12,6 +12,10 @@ if (NOT PROJ)
 else()
     message("PROJ = ${PROJ}")
 endif ()
+
+get_filename_component(TOOLCHAIN "kendryte-toolchain/bin" REALPATH BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../")
+message("${TOOLCHAIN}  ${CMAKE_CURRENT_SOURCE_DIR}")
+
 cmake_minimum_required(VERSION 3.0)
 include(./cmake/common.cmake)
 project(${PROJ} C CXX ASM)
