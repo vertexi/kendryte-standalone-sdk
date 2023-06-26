@@ -1592,7 +1592,7 @@ void pwm_spi_dma_init(spi_device_num_t spi_num, spi_chip_select_t chip_select, s
     sysctl_dma_select(data.tx_channel, SYSCTL_DMA_SELECT_SSI0_TX_REQ + spi_num * 2);
 }
 
-void spi_handle_data_dma_t(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb)
+void pwn_spi_dma_transfer(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb)
 {
     static volatile spi_t *spi_handle;
 
@@ -1606,6 +1606,46 @@ void spi_handle_data_dma_t(spi_device_num_t spi_num, spi_chip_select_t chip_sele
     } else
     {
         dmac_set_src_dest_length(data.tx_channel, data.tx_buf, (void *)(&spi_handle->dr[0]), data.tx_len);
+    }
+    spi_handle->ser = 1U << chip_select;
+}
+
+void AD7606_spi_dma_init(spi_device_num_t spi_num, spi_data_t data, plic_interrupt_t *cb)
+{
+    // volatile spi_t *spi_handle = spi[spi_num];
+
+    // spi_set_tmod(spi_num, SPI_TMOD_RECV);
+    // spi_handle->ctrlr1 = (uint32_t)(data.rx_len - 1);
+    // spi_handle->dmacr = 0x03;
+    // spi_handle->ssienr = 0x01;
+    // spi_handle->dr[0] = 0xffffffff;
+
+    dmac_irq_register(data.rx_channel, cb->callback, cb->ctx, cb->priority);
+    sysctl_dma_select((sysctl_dma_channel_t)data.rx_channel, SYSCTL_DMA_SELECT_SSI0_RX_REQ + spi_num * 2);
+}
+
+void AD7606_spi_dma_transfer(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb)
+{
+    volatile spi_t *spi_handle = spi[spi_num];
+
+    spi_set_tmod(spi_num, SPI_TMOD_RECV);
+    spi_handle->ctrlr1 = (uint32_t)(data.rx_len - 1);
+    spi_handle->dmacr = 0x03;
+    spi_handle->ssienr = 0x01;
+    spi_handle->dr[0] = 0xffffffff;
+
+    // dmac_irq_register(data.rx_channel, cb->callback, cb->ctx, cb->priority);
+    // sysctl_dma_select((sysctl_dma_channel_t)data.rx_channel, SYSCTL_DMA_SELECT_SSI0_RX_REQ + spi_num * 2);
+
+    static volatile bool first_time = true;
+    if (first_time)
+    {
+        first_time = false;
+        dmac_set_single_mode(data.rx_channel, (void *)(&spi_handle->dr[0]), (void *)data.rx_buf, DMAC_ADDR_NOCHANGE, DMAC_ADDR_INCREMENT,
+                            DMAC_MSIZE_1, DMAC_TRANS_WIDTH_32, data.rx_len);
+    } else
+    {
+        dmac_set_src_dest_length(data.tx_channel, (void *)(&spi_handle->dr[0]), (void *)data.rx_buf, data.tx_len);
     }
     spi_handle->ser = 1U << chip_select;
 }
