@@ -1579,3 +1579,33 @@ void spi_handle_data_dma(spi_device_num_t spi_num, spi_chip_select_t chip_select
         spi_handle->ssienr = 0x00;
     }
 }
+
+void pwm_spi_dma_init(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb)
+{
+    volatile spi_t *spi_handle = spi[spi_num];
+
+    spi_set_tmod(spi_num, SPI_TMOD_TRANS);
+    spi_handle->dmacr = 0x2; /*enable dma transmit*/
+    spi_handle->ssienr = 0x01;
+
+    dmac_irq_register(data.tx_channel, cb->callback, cb->ctx, cb->priority);
+    sysctl_dma_select(data.tx_channel, SYSCTL_DMA_SELECT_SSI0_TX_REQ + spi_num * 2);
+}
+
+void spi_handle_data_dma_t(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb)
+{
+    static volatile spi_t *spi_handle;
+
+    static volatile bool first_time = true;
+    if (first_time)
+    {
+        first_time = false;
+        spi_handle = spi[spi_num];
+        dmac_set_single_mode(data.tx_channel, data.tx_buf, (void *)(&spi_handle->dr[0]), DMAC_ADDR_INCREMENT, DMAC_ADDR_NOCHANGE,
+                                DMAC_MSIZE_4, DMAC_TRANS_WIDTH_32, data.tx_len);
+    } else
+    {
+        dmac_set_src_dest_length(data.tx_channel, data.tx_buf, (void *)(&spi_handle->dr[0]), data.tx_len);
+    }
+    spi_handle->ser = 1U << chip_select;
+}

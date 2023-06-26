@@ -488,6 +488,8 @@ void spi_slave_dual_config(uint8_t int_pin,
  *
  */
 void spi_handle_data_dma(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb);
+void pwm_spi_dma_init(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb);
+void spi_handle_data_dma_t(spi_device_num_t spi_num, spi_chip_select_t chip_select, spi_data_t data, plic_interrupt_t *cb);
 
 #ifdef __cplusplus
 }
